@@ -66,7 +66,7 @@ Shader "ArmNomads/Standard"
 		{
 			CGPROGRAM
 
-			#include "ANStandard.cginc"
+			#include "./ANStandard.cginc"
 
 			#pragma vertex vert
 			#pragma fragment frag
