@@ -312,11 +312,8 @@
 		#else
 			o.ambient = ShadeSH9(half4(normal, 1));
 			o.ramp = GetLightingRamp(normal);
-			#if SPECULAR || RIM_LIGHTING
-				normal = mul((float3x3)unity_ObjectToWorld, v.normal);
-			#endif
 		#endif
-		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION
+		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION || PLANE_CLIPPING
 				o.normal = normal;
 		#endif
 		o.pos = UnityObjectToClipPos(v.vertex);
