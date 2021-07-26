@@ -33,6 +33,7 @@ namespace ArmNomads.Shaders
         private MaterialProperty overlayTexProp;
         private MaterialProperty clipPlanePosProp;
         private MaterialProperty clipPlaneNormalProp;
+        private MaterialProperty clipSectionColorProp;
         private MaterialProperty displacementMapProp;
         private MaterialProperty displacementHeightProp;
 
@@ -72,6 +73,7 @@ namespace ArmNomads.Shaders
 
             clipPlanePosProp = FindProperty("_PlanePosition", properties);
             clipPlaneNormalProp = FindProperty("_PlaneNormal", properties);
+            clipSectionColorProp = FindProperty("_ClipSectionColor", properties);
 
             displacementMapProp = FindProperty("_DisplaceMap", properties);
             displacementHeightProp = FindProperty("_DisplaceHeight", properties);
@@ -258,6 +260,7 @@ namespace ArmNomads.Shaders
                 if (toggleProp.floatValue <= 0)
                     return;
                 ++EditorGUI.indentLevel;
+                materialEditor.ShaderProperty(clipSectionColorProp, clipSectionColorProp.displayName);
                 materialEditor.ShaderProperty(clipPlanePosProp, clipPlanePosProp.displayName);
                 materialEditor.ShaderProperty(clipPlaneNormalProp, clipPlaneNormalProp.displayName);
                 --EditorGUI.indentLevel;

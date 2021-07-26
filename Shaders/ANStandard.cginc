@@ -56,6 +56,7 @@
 	#if PLANE_CLIPPING
 		float3 _PlanePosition;
 		float3 _PlaneNormal;
+		fixed4 _ClipSectionColor; 
 	#endif
 
 	#if OVERLAY_TEXTURE
@@ -243,6 +244,7 @@
 		#endif
 		#if PLANE_CLIPPING
 			_PlaneNormal = normalize(_PlaneNormal);
+			diffuse = lerp(_ClipSectionColor, diffuse, facing);
 			normal = lerp(_PlaneNormal, normal, step(0.5, facing));
 			ramp = lerp(GetLightingRamp(normal), ramp, step(0.5,facing));
 			ambient = lerp(ShadeSH9(half4(normal, 1)), ambient, step(0.5, facing));
