@@ -51,7 +51,8 @@ Shader "ArmNomads/Standard"
 		[Toggle(PLANE_CLIPPING)] _PlaneClipping("Plane Clipping", Int) = 0
 		[HideInInspector]_PlanePosition("Plane Position", Vector) = (0,0,0,0)
 		[HideInInspector]_PlaneNormal("Plane Normal", Vector) = (0,0,1,0)
-		[HideInInspector]_ClipSectionColor("Clip Section Color", Color) = (1,1,1,1)
+		[HideInInspector][Toggle]_ClipSectionEmmisive("Emmisive", Float) = 0
+		[HideInInspector]_ClipSectionColor("Clip Section Color", Color) = (1,1,1,0)
 
 		[Toggle(DISPLACEMENT)] _Displacement("Displacement", Int) = 0
 		[HideInInspector] _DisplaceMap("Disp. Map", 2D) = "black" {}

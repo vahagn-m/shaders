@@ -1,4 +1,4 @@
-﻿#ifndef AN_COMMON
+#ifndef AN_COMMON
 	#define AN_COMMON
 
 	#include "UnityCG.cginc"
@@ -56,7 +56,8 @@
 	#if PLANE_CLIPPING
 		float3 _PlanePosition;
 		float3 _PlaneNormal;
-		fixed4 _ClipSectionColor; 
+		fixed _ClipSectionEmmisive;
+		fixed4 _ClipSectionColor;
 	#endif
 
 	#if OVERLAY_TEXTURE
@@ -223,7 +224,7 @@
 
 	inline fixed4 CalculateShading(fixed3 diffuse, v2f i, fixed facing)
 	{
-		fixed3 ramp, ambient;
+		fixed3 ramp = 0.0, ambient = 0.0, emission = 0.0;
 		float3 normal;
 		#if SPECULAR || RIM_LIGHTING
 			float3 viewDir = SafeNormalize(_WorldSpaceCameraPos.xyz - i.worldPos);
@@ -244,7 +245,10 @@
 		#endif
 		#if PLANE_CLIPPING
 			_PlaneNormal = normalize(_PlaneNormal);
-			diffuse = lerp(_ClipSectionColor, diffuse, facing);
+			float blend = lerp(1, 0, step(0.5,facing)) * _ClipSectionColor.a;
+			diffuse = lerp(diffuse, _ClipSectionColor, blend);
+			diffuse *= step(0,_ClipSectionEmmisive);
+			emission = lerp(emission, _ClipSectionColor, blend * _ClipSectionEmmisive);
 			normal = lerp(_PlaneNormal, normal, step(0.5, facing));
 			ramp = lerp(GetLightingRamp(normal), ramp, step(0.5,facing));
 			ambient = lerp(ShadeSH9(half4(normal, 1)), ambient, step(0.5, facing));
@@ -279,15 +283,15 @@
 		#endif
 
 		#if EMISSION
-			fixed3 emission = _EmissionColor;
+			emission += _EmissionColor;
 			#if WORLD_SPACE_UV
 				fixed3 emissionMap = TriplanarSample(_EmissionMap, i.triWeights, i.worldPos, _EmissionMap_ST).rgb;
 			#else	
 				fixed3 emissionMap = tex2D(_EmissionMap, i.uv * _EmissionMap_ST.xy + _EmissionMap_ST.zw).rgb;
 			#endif
 			emission *= emissionMap;
-			col.rgb += emission;
 		#endif
+		col.rgb += emission;
 		return col;
 	}
 
