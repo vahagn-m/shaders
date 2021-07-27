@@ -16,6 +16,8 @@ namespace ArmNomads.Shaders
         private MaterialProperty specSizeProp;
         private MaterialProperty specSmoothnessProp;
         private MaterialProperty specTextureProp;
+        private MaterialProperty normalMapTexProp;
+        private MaterialProperty normalSmoothingProp;
         private MaterialProperty rimColorProp;
         private MaterialProperty rimMinProp;
         private MaterialProperty rimMaxProp;
@@ -52,6 +54,9 @@ namespace ArmNomads.Shaders
             specSizeProp = FindProperty("_SpecularToonSize", properties);
             specSmoothnessProp = FindProperty("_SpecularToonSmoothness", properties);
             specTextureProp = FindProperty("_SpecGlossMap", properties);
+
+            normalMapTexProp = FindProperty("_NormalMapTex", properties);
+            normalSmoothingProp = FindProperty("_NormalSmoothing", properties);
 
             rimColorProp = FindProperty("_RimColor", properties);
             rimMinProp = FindProperty("_RimMin", properties);
@@ -91,6 +96,10 @@ namespace ArmNomads.Shaders
                 else if (property.name.Equals("_Specular"))
                 {
                     DrawSpecularProperties(property, materialEditor);
+                }
+                else if (property.name.Equals("_NormalMap"))
+                {
+                    DrawNormalMapProperties(property, materialEditor);
                 }
                 else if (property.name.Equals("_WorldSpaceUV"))
                 {
@@ -167,6 +176,20 @@ namespace ArmNomads.Shaders
                 ++EditorGUI.indentLevel;
                 materialEditor.ShaderProperty(emissionMapProp, emissionMapProp.displayName);
                 materialEditor.ShaderProperty(emissionColorProp, emissionColorProp.displayName);
+                --EditorGUI.indentLevel;
+            }
+        }
+
+        private void DrawNormalMapProperties(MaterialProperty toggleProp, MaterialEditor materialEditor)
+        {
+            using (var v = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                DrawShaderKeywordToggle(toggleProp, "NORMAL_MAP");
+                if (toggleProp.floatValue <= 0)
+                    return;
+                ++EditorGUI.indentLevel;
+                materialEditor.TexturePropertySingleLine(new GUIContent(normalMapTexProp.displayName), normalMapTexProp);
+                materialEditor.ShaderProperty(normalSmoothingProp, normalSmoothingProp.displayName);
                 --EditorGUI.indentLevel;
             }
         }

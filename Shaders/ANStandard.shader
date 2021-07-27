@@ -24,6 +24,10 @@ Shader "ArmNomads/Standard"
 		[HideInInspector] _SpecularToonSmoothness("Smoothing", Range(0,1)) = 0
 		[HideInInspector] _SpecGlossMap("Specular Texture", 2D) = "white" {}
 
+		[Toggle(NORMAL_MAP)] _NormalMap("Normal Map", Int) = 0
+		[HideInInspector][Normal]_NormalMapTex("Normal Map Texture", 2D) = "" {}
+		[HideInInspector] _NormalSmoothing("Normal Smoothing", Range(0,1)) = 0
+
 		[Toggle(RIM_LIGHTING)] _RimLighting("Rim Lighting", Int) = 0
 		[HideInInspector][HDR] _RimColor("Color", Color) = (1,1,1,1)
 		[HideInInspector] _RimMin("Min", Range(0,1)) = 0
@@ -78,6 +82,7 @@ Shader "ArmNomads/Standard"
 			#pragma shader_feature_local SPECULAR
 			#pragma shader_feature_local SPECULAR_STYLIZED
 			#pragma shader_feature_local SPECULAR_CRISP
+			#pragma shader_feature_local NORMAL_MAP
 			#pragma shader_feature_local RIM_LIGHTING
 			#pragma shader_feature_local RIM_LIGHT_BASED
 			#pragma shader_feature_local WORLD_SPACE_UV

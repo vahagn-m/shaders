@@ -35,6 +35,11 @@
 		#endif
 	#endif
 
+	#if NORMAL_MAP
+		sampler2D _NormalMapTex;
+		float _NormalSmoothing;
+	#endif
+
 	#if RIM_LIGHTING
 		fixed4 _RimColor;
 		float _RimMin;
@@ -81,7 +86,7 @@
 		float4 vertex : POSITION;
 		float2 uv : TEXCOORD0;
 		float3 normal : NORMAL;
-		#if DISPLACEMENT
+		#if DISPLACEMENT || NORMAL_MAP
 			float3 tangent : TANGENT;
 		#endif
 	};
@@ -97,7 +102,7 @@
 		#if WORLD_SPACE_UV
 			fixed3 triWeights : TEXCOORD3;
 		#endif
-		#if DISPLACEMENT
+		#if DISPLACEMENT || NORMAL_MAP
 			float3x3 TBN : TEXCOORD5;
 		#else
 			fixed3 ambient : COLOR1;
@@ -229,10 +234,21 @@
 		#if SPECULAR || RIM_LIGHTING
 			float3 viewDir = SafeNormalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		#endif
-		#if DISPLACEMENT
+
+		#if DISPLACEMENT || NORMAL_MAP
 			i.TBN = float3x3(normalize(i.TBN[0]), normalize(i.TBN[1]), normalize(i.TBN[2]));
 			i.TBN = transpose(i.TBN);
-			float3 tangentSpaceNormal = FilterNormal(i, _DisplaceHeight);
+			float3 tangentSpaceNormal;
+			#if DISPLACEMENT
+				tangentSpaceNormal = FilterNormal(i, _DisplaceHeight);
+			#else
+				#if WORLD_SPACE_UV
+					tangentSpaceNormal = UnpackNormal(TriplanarSample(_NormalMapTex, i.triWeights, i.worldPos, _MainTex_ST));
+				#else
+					tangentSpaceNormal = UnpackNormal(tex2D(_NormalMapTex, i.uv * _MainTex_ST.xy + _MainTex_ST.zw));
+				#endif
+				tangentSpaceNormal = lerp(tangentSpaceNormal, float3(0,0,1), _NormalSmoothing);
+			#endif
 			normal = mul(i.TBN, tangentSpaceNormal);
 			ramp = GetLightingRamp(normal);
 			ambient = ShadeSH9(half4(normal, 1));
@@ -243,6 +259,7 @@
 				normal = normalize(i.normal);
 			#endif
 		#endif
+
 		#if PLANE_CLIPPING
 			_PlaneNormal = normalize(_PlaneNormal);
 			float blend = lerp(1, 0, step(0.5,facing)) * _ClipSectionColor.a;
@@ -253,6 +270,7 @@
 			ramp = lerp(GetLightingRamp(normal), ramp, step(0.5,facing));
 			ambient = lerp(ShadeSH9(half4(normal, 1)), ambient, step(0.5, facing));
 		#endif
+
 		fixed3 lum = GetLuminance(ramp, i.uv);
 		fixed shadow = UNITY_SHADOW_ATTENUATION(i, i.worldPos);
 		lum = lerp(_SColor, lum, shadow);
@@ -261,6 +279,7 @@
 		#if !GRADIENT
 			col.rgb *= _Color;
 		#endif
+		
 		#if RIM_LIGHTING
 			half3 rimMask = half3(1.0, 1.0, 1.0);
 			#if RIM_LIGHT_BASED
@@ -304,17 +323,19 @@
 			o.triWeights = GetTriPlanarWeights(normal);
 		#endif
 		o.uv = v.uv;
-		#if DISPLACEMENT
+		#if DISPLACEMENT || NORMAL_MAP
 			float3 worldTangent = mul((float3x3)unity_ObjectToWorld, v.tangent);
 			float3 worldNormal = mul((float3x3)unity_ObjectToWorld, v.normal);
-			float3 worldBiTangent = cross(worldNormal, worldTangent);
+			float3 worldBiTangent = cross(worldTangent, worldNormal);
 			o.TBN = float3x3(worldTangent, worldBiTangent, worldNormal);
-			#if WORLD_SPACE_UV
-				float displace = TriplanarSampleLod(_DisplaceMap, o.triWeights, o.worldPos, _MainTex_ST, 0.0);
-			#else
-				float displace = tex2Dlod(_DisplaceMap, float4(v.uv * _MainTex_ST.xy + _MainTex_ST.zw, 0.0, 0.0)).r;
+			#if DISPLACEMENT
+				#if WORLD_SPACE_UV
+					float displace = TriplanarSampleLod(_DisplaceMap, o.triWeights, o.worldPos, _MainTex_ST, 0.0);
+				#else
+					float displace = tex2Dlod(_DisplaceMap, float4(v.uv * _MainTex_ST.xy + _MainTex_ST.zw, 0.0, 0.0)).r;
+				#endif
+				v.vertex.xyz = mul(unity_WorldToObject, float4(o.worldPos + worldNormal * displace * _DisplaceHeight,1.0));
 			#endif
-			v.vertex.xyz = mul(unity_WorldToObject, float4(o.worldPos + worldNormal * displace * _DisplaceHeight,1.0));
 		#else
 			o.ambient = ShadeSH9(half4(normal, 1));
 			o.ramp = GetLightingRamp(normal);
