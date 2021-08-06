@@ -96,11 +96,11 @@
 		float4 pos : SV_POSITION;
 		float2 uv : TEXCOORD0;
 		float3 worldPos : TEXCOORD4;
-		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION || PLANE_CLIPPING
+		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION || PLANE_CLIPPING || ((DISPLACEMENT || NORMAL_MAP) && WORLD_SPACE_UV)
 			float3 normal : NORMAL;
 		#endif
 		#if WORLD_SPACE_UV
-			fixed3 triWeights : TEXCOORD3;
+			float3 triWeights : TEXCOORD3;
 		#endif
 		#if DISPLACEMENT || NORMAL_MAP
 			float3x3 TBN : TEXCOORD5;
@@ -173,7 +173,7 @@
 			return triWeights / (triWeights.x + triWeights.y + triWeights.z);
 		}
 
-		inline fixed4 TriplanarSample(sampler2D tex, fixed3 weights, float3 pos, float4 texST)
+		inline fixed4 TriplanarSample(sampler2D tex, float3 weights, float3 pos, float4 texST)
 		{
 			fixed4 colorXOZ = tex2D(tex, pos.xz * texST.xy + texST.zw) * weights.y;
 			fixed4 colorXOY = tex2D(tex, pos.xy * texST.xy + texST.zw) * weights.z;
@@ -181,37 +181,66 @@
 			return colorXOZ + colorXOY + colorZOY;
 		}
 
-		inline fixed4 TriplanarSampleLod(sampler2D tex, fixed3 weights, float3 pos, float4 texST, float lod)
+		inline fixed4 TriplanarSampleLod(sampler2D tex, float3 weights, float3 pos, float4 texST, float lod)
 		{
 			fixed4 colorXOZ = tex2Dlod(tex, float4(pos.xz * texST.xy + texST.zw, 0.0, lod)) * weights.y;
 			fixed4 colorXOY = tex2Dlod(tex, float4(pos.xy * texST.xy + texST.zw, 0.0, lod)) * weights.z;
 			fixed4 colorZOY = tex2Dlod(tex, float4(pos.zy * texST.xy + texST.zw, 0.0, lod)) * weights.x;
 			return colorXOZ + colorXOY + colorZOY;
 		}
+
+		inline float3 GetTriplanarNormal(sampler2D normalMap, float3 weights, float3 wNormal, float3 wPos, float4 texST)
+		{
+			float2 uvZY = wPos.zy * texST.xy + texST.zw;
+			float2 uvXZ = wPos.xz * texST.xy + texST.zw;
+			float2 uvXY = wPos.xy * texST.xy + texST.zw;
+
+			half3 tNormalZY = UnpackNormal(tex2D(normalMap, uvZY));
+			half3 tNormalXZ = UnpackNormal(tex2D(normalMap, uvXZ));
+			half3 tNormalXY = UnpackNormal(tex2D(normalMap, uvXY));
+
+			half3 normalZY = half3(0, tNormalZY[1], tNormalZY[0]);
+			half3 normalXZ = half3(tNormalXZ[0], 0, tNormalXZ[1]);
+			half3 normalXY = half3(tNormalXY[0], tNormalXY[1], 0);
+
+			return normalize(normalZY * weights.x +
+							 normalXZ * weights.y +
+							 normalXY * weights.z + 
+							 wNormal);
+		}
 	#endif
 
 	#if DISPLACEMENT
-		inline float3 FilterNormal(v2f i, float maxHeight)
+		inline float3 GetReconstructedNormal(sampler2D heightMap, float4 texelSize, float2 uv, float maxHeight, float4 texST)
 		{
 			float4 p;
 			float3 n;
-			#if WORLD_SPACE_UV
-				p[0] = TriplanarSample(_DisplaceMap, i.triWeights, i.worldPos, float4(1.0, 1.0, _DisplaceMap_TexelSize.x, 0.0)).r;
-				p[1] = TriplanarSample(_DisplaceMap, i.triWeights, i.worldPos, float4(1.0, 1.0, -_DisplaceMap_TexelSize.x, 0.0)).r;
-				p[2] = TriplanarSample(_DisplaceMap, i.triWeights, i.worldPos, float4(1.0, 1.0, 0.0, _DisplaceMap_TexelSize.y)).r;
-				p[3] = TriplanarSample(_DisplaceMap, i.triWeights, i.worldPos, float4(1.0, 1.0, 0.0, -_DisplaceMap_TexelSize.y)).r;
-			#else
-				p[0] = tex2Dlod(_DisplaceMap, float4(i.uv + float2(_DisplaceMap_TexelSize.x, 0.0), 0.0, 0.0)).r;
-				p[1] = tex2Dlod(_DisplaceMap, float4(i.uv - float2(_DisplaceMap_TexelSize.x, 0.0), 0.0, 0.0)).r;
-				p[2] = tex2Dlod(_DisplaceMap, float4(i.uv + float2(0.0, _DisplaceMap_TexelSize.y), 0.0, 0.0)).r;
-				p[3] = tex2Dlod(_DisplaceMap, float4(i.uv - float2(0.0, _DisplaceMap_TexelSize.y), 0.0, 0.0)).r;
-			#endif
+			p[0] = tex2Dlod(heightMap, float4(uv * texST.xy + texST.zw + float2(texelSize.x, 0.0), 0.0, 0.0)).r;
+			p[1] = tex2Dlod(heightMap, float4(uv * texST.xy + texST.zw + float2(-texelSize.x, 0.0), 0.0, 0.0)).r;
+			p[2] = tex2Dlod(heightMap, float4(uv * texST.xy + texST.zw + float2(0.0, texelSize.y), 0.0, 0.0)).r;
+			p[3] = tex2Dlod(heightMap, float4(uv * texST.xy + texST.zw + float2(0.0, -texelSize.y), 0.0, 0.0)).r;
 			p *= maxHeight;
 			n.x = p[1] - p[0];
 			n.y = p[3] - p[2];
-			n.z = (2.0 / _DisplaceMap_TexelSize.z);
+			n.z = (2.0 / texelSize.z);
 
 			return normalize(n);
+		}
+
+		inline float3 ReconstructNormalTriplanar(sampler2D heightMap, float4 texelSize, float3 weights, float3 wNormal, float3 wPos, float maxHeight, float4 texST)
+		{
+			half3 tNormalZY = GetReconstructedNormal(heightMap, texelSize, wPos.zy, maxHeight, texST);
+			half3 tNormalXZ = GetReconstructedNormal(heightMap, texelSize, wPos.xz, maxHeight, texST);
+			half3 tNormalXY = GetReconstructedNormal(heightMap, texelSize, wPos.xy, maxHeight, texST);
+
+			half3 normalZY = half3(0, tNormalZY[1], tNormalZY[0]);
+			half3 normalXZ = half3(tNormalXZ[0], 0, tNormalXZ[1]);
+			half3 normalXY = half3(tNormalXY[0], tNormalXY[1], 0);
+
+			return normalize(normalZY * weights.x +
+							 normalXZ * weights.y +
+							 normalXY * weights.z + 
+							 wNormal);
 		}
 	#endif
 
@@ -236,20 +265,25 @@
 		#endif
 
 		#if DISPLACEMENT || NORMAL_MAP
-			i.TBN = float3x3(normalize(i.TBN[0]), normalize(i.TBN[1]), normalize(i.TBN[2]));
-			i.TBN = transpose(i.TBN);
-			float3 tangentSpaceNormal;
-			#if DISPLACEMENT
-				tangentSpaceNormal = FilterNormal(i, _DisplaceHeight);
+			#if WORLD_SPACE_UV
+				#if DISPLACEMENT
+					normal = ReconstructNormalTriplanar(_DisplaceMap, _DisplaceMap_TexelSize, i.triWeights, i.normal, i.worldPos, _DisplaceHeight, _MainTex_ST);
+				#else
+					normal = GetTriplanarNormal(_NormalMapTex, i.triWeights, i.normal, i.worldPos, _MainTex_ST);
+					normal = lerp(normal, i.normal, _NormalSmoothing);
+				#endif
 			#else
-				#if WORLD_SPACE_UV
-					tangentSpaceNormal = UnpackNormal(TriplanarSample(_NormalMapTex, i.triWeights, i.worldPos, _MainTex_ST));
+				i.TBN = float3x3(normalize(i.TBN[0]), normalize(i.TBN[1]), normalize(i.TBN[2]));
+				i.TBN = transpose(i.TBN);
+				float3 tangentSpaceNormal;
+				#if DISPLACEMENT
+					tangentSpaceNormal = GetReconstructedNormal(_DisplaceMap, _DisplaceMap_TexelSize, i.uv, _DisplaceHeight, _MainTex_ST);
 				#else
 					tangentSpaceNormal = UnpackNormal(tex2D(_NormalMapTex, i.uv * _MainTex_ST.xy + _MainTex_ST.zw));
+					tangentSpaceNormal = lerp(tangentSpaceNormal, float3(0,0,1), _NormalSmoothing);
 				#endif
-				tangentSpaceNormal = lerp(tangentSpaceNormal, float3(0,0,1), _NormalSmoothing);
+				normal = mul(i.TBN, tangentSpaceNormal);
 			#endif
-			normal = mul(i.TBN, tangentSpaceNormal);
 			ramp = GetLightingRamp(normal);
 			ambient = ShadeSH9(half4(normal, 1));
 		#else
@@ -340,7 +374,7 @@
 			o.ambient = ShadeSH9(half4(normal, 1));
 			o.ramp = GetLightingRamp(normal);
 		#endif
-		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION || PLANE_CLIPPING
+		#if SPECULAR || RIM_LIGHTING ||	OVERLAY_PROJECTION || PLANE_CLIPPING || ((DISPLACEMENT || NORMAL_MAP) && WORLD_SPACE_UV)
 				o.normal = normal;
 		#endif
 		o.pos = UnityObjectToClipPos(v.vertex);

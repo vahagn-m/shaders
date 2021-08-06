@@ -61,12 +61,14 @@ Shader "ArmNomads/Standard"
 		[Toggle(DISPLACEMENT)] _Displacement("Displacement", Int) = 0
 		[HideInInspector] _DisplaceMap("Disp. Map", 2D) = "black" {}
 		[HideInInspector] _DisplaceHeight("Height", Float) = 0
+
+		[Enum(UnityEngine.Rendering.CullMode)] _Culling ("Culling", Int) = 2
 	}
 	SubShader
 	{
 		Tags { "RenderType"="Opaque" "LightMode"="ForwardBase"}
 		LOD 100
-		Cull Off
+		Cull [_Culling]
 
 		Pass
 		{
