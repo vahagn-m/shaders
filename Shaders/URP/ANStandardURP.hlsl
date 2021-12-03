@@ -334,7 +334,7 @@ half4 Fragment(Varyings i, half facing : VFACE) : SV_Target
 	#if OVERLAY_TEXTURE
 		#if OVERLAY_PROJECTION
 			half3 projPlaneNormal = GetProjectionPlaneNormal();
-			half3 localPos = TransformWorldToObject(i.worldPosAndFogFactor.xyz - TransformObjectToWorld(real4(0, 0, 0, 1)).xyz).xyz;
+			half3 localPos = TransformWorldToObject(i.worldPosAndFogFactor.xyz);
 			real2 uv = mul(GetTransformationMatrix(projPlaneNormal), localPos).xy / _ProjScaleOffset.xy + _ProjScaleOffset.zw + 0.5;
 			half4 overlay = tex2D(_OverlayTex, uv) * step(0,dot(projPlaneNormal, i.normal));
 		#elif WORLD_SPACE_UV
