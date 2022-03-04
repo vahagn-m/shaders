@@ -65,6 +65,8 @@ Shader "ArmNomads/Standard URP"
 		[HideInInspector] _DisplaceHeight("Height", Float) = 0
 
 		[Enum(UnityEngine.Rendering.CullMode)] _Culling ("Culling", Int) = 2
+		[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest("ZTest", Int) = 4
+		[Enum(Off,0,On,1)] _ZWrite("ZWrite", Float) = 1
 	}
 
 	SubShader
@@ -73,6 +75,8 @@ Shader "ArmNomads/Standard URP"
 		Tags { "RenderPipeline" = "UniversalRenderPipeline" "RenderType"="Opaque" "UniversalMaterialType" = "Lit" }
 		LOD 100
 		Cull [_Culling]
+		ZTest [_ZTest]
+		ZWrite [_ZWrite]
 
 		Pass
 		{
