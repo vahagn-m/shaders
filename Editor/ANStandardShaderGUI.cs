@@ -89,7 +89,11 @@ namespace ArmNomads.Shaders
             {
                 if (((int)property.flags & (int)MaterialProperty.PropFlags.HideInInspector) > 0)
                     continue;
-                if (property.name.Equals("_Emission"))
+                if (property.name.Equals("_VertexColor"))
+                {
+                    DrawVertexColorProperties(property, materialEditor);
+                }
+                else if (property.name.Equals("_Emission"))
                 {
                     DrawEmissionProperties(property, materialEditor);
                 }
@@ -163,6 +167,14 @@ namespace ArmNomads.Shaders
                 materialEditor.ShaderProperty(rimMaxProp, rimMaxProp.displayName);
                 materialEditor.ShaderProperty(rimLightBasedProp, rimLightBasedProp.displayName);
                 --EditorGUI.indentLevel;
+            }
+        }
+
+        private void DrawVertexColorProperties(MaterialProperty toggleProp, MaterialEditor materialEditor)
+        {
+            using (var v = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                DrawShaderKeywordToggle(toggleProp, "VERTEX_COLOR");
             }
         }
 

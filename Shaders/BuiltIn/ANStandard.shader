@@ -10,6 +10,8 @@ Shader "ArmNomads/Standard"
 		_RampThreshold ("Ramp Threshold", Range(0,1)) = 0.5
 		_RampSmooth ("Ramp Smoothing", Range(0.01,1)) = 0.1
 
+		[Toggle(VERTEX_COLOR)] _VertexColor("Vertex Color", Int) = 0
+
 		[Toggle(EMISSION)] _Emission("Emission", Int) = 0
 		[HideInInspector] _EmissionMap("Emission Map", 2D) = "white" {}
 		[HideInInspector][HDR] _EmissionColor("Color", Color) = (0,0,0,1)
@@ -82,6 +84,7 @@ Shader "ArmNomads/Standard"
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdbase
 
+			#pragma shader_feature_local VERTEX_COLOR
 			#pragma shader_feature_local EMISSION
 			#pragma shader_feature_local SPECULAR
 			#pragma shader_feature_local SPECULAR_STYLIZED
@@ -110,7 +113,7 @@ Shader "ArmNomads/Standard"
 
 			#pragma shader_feature_local PLANE_CLIPPING
 
- 			#include "UnityCG.cginc"
+			#include "UnityCG.cginc"
 
 			struct v2f {
 #if PLANE_CLIPPING

@@ -86,6 +86,9 @@
 		float4 vertex : POSITION;
 		float2 uv : TEXCOORD0;
 		float3 normal : NORMAL;
+#if VERTEX_COLOR
+		fixed3 color : COLOR;
+#endif
 		#if DISPLACEMENT || NORMAL_MAP
 			float3 tangent : TANGENT;
 		#endif
@@ -96,6 +99,9 @@
 		float4 pos : SV_POSITION;
 		float2 uv : TEXCOORD0;
 		float3 worldPos : TEXCOORD4;
+#if VERTEX_COLOR
+		fixed3 color : COLOR2;
+#endif
 		#if SPECULAR || RIM_LIGHTING || OVERLAY_PROJECTION || PLANE_CLIPPING || ((DISPLACEMENT || NORMAL_MAP) && WORLD_SPACE_UV)
 			float3 normal : NORMAL;
 		#endif
@@ -356,6 +362,9 @@
 		#if WORLD_SPACE_UV
 			o.triWeights = GetTriPlanarWeights(normal);
 		#endif
+#if VERTEX_COLOR
+		o.color = v.color;
+#endif
 		o.uv = v.uv;
 		#if DISPLACEMENT || NORMAL_MAP
 			float3 worldTangent = mul((float3x3)unity_ObjectToWorld, v.tangent);
@@ -409,6 +418,10 @@
 		#else
 			fixed4 diffuse = tex2D(_MainTex, i.uv * _MainTex_ST.xy + _MainTex_ST.zw);
 		#endif
+
+#if VERTEX_COLOR
+		diffuse.rgb *= i.color;
+#endif
 
 		fixed4 col = CalculateShading(diffuse, i, facing);
 
