@@ -214,14 +214,15 @@ namespace ArmNomads.Shaders
                 if (toggleProp.floatValue <= 0)
                     return;
                 ++EditorGUI.indentLevel;
-                if (targetMat.IsKeywordEnabled("SPECULAR_STYLIZED") || targetMat.IsKeywordEnabled("SPECULAR_CRISP"))
-                    selectedSpecularType = targetMat.IsKeywordEnabled("SPECULAR_STYLIZED") ? 1 : 2;
+                if (targetMat.GetFloat("_SpecularStylized") > 0 || targetMat.GetFloat("_SpecularCrisp") > 0)
+                    selectedSpecularType = targetMat.GetFloat("_SpecularStylized") > 0 ? 1 : 2;
                 else
                     selectedSpecularType = 0;
                 selectedSpecularType = EditorGUILayout.Popup("Type", selectedSpecularType, SPECULAR_TYPES);
                 materialEditor.ShaderProperty(specColorProp, specColorProp.displayName);
                 if (selectedSpecularType == 0)
                 {
+                    targetMat.SetFloat("_SpecularStylized", 0); targetMat.SetFloat("_SpecularCrisp", 0);
                     targetMat.DisableKeyword("SPECULAR_STYLIZED"); targetMat.DisableKeyword("SPECULAR_CRISP");
                     materialEditor.ShaderProperty(specRoughnessProp, specRoughnessProp.displayName);
                 }
@@ -230,13 +231,14 @@ namespace ArmNomads.Shaders
                     materialEditor.ShaderProperty(specSizeProp, specSizeProp.displayName);
                     if (selectedSpecularType == 1)
                     {
+                        targetMat.SetFloat("_SpecularStylized", 1); targetMat.SetFloat("_SpecularCrisp", 0);
                         targetMat.EnableKeyword("SPECULAR_STYLIZED"); targetMat.DisableKeyword("SPECULAR_CRISP");
                         materialEditor.ShaderProperty(specSmoothnessProp, specSmoothnessProp.displayName);
                     }
                     else
                     {
-                        targetMat.EnableKeyword("SPECULAR_CRISP");
-                        targetMat.DisableKeyword("SPECULAR_STYLIZED");
+                        targetMat.SetFloat("_SpecularStylized", 0); targetMat.SetFloat("_SpecularCrisp", 1);
+                        targetMat.DisableKeyword("SPECULAR_STYLIZED"); targetMat.EnableKeyword("SPECULAR_CRISP");
                     }
                 }
                 materialEditor.TexturePropertySingleLine(new GUIContent(specTextureProp.displayName), specTextureProp);
