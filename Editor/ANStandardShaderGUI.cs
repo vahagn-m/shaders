@@ -33,6 +33,7 @@ namespace ArmNomads.Shaders
         private MaterialProperty projScaleOffsetProp;
         private MaterialProperty overlayTintProp;
         private MaterialProperty overlayTexProp;
+        private MaterialProperty clipPlaneLocalProp;
         private MaterialProperty clipPlanePosProp;
         private MaterialProperty clipPlaneNormalProp;
         private MaterialProperty clipSectionEmmisiveProp;
@@ -77,6 +78,7 @@ namespace ArmNomads.Shaders
             overlayTintProp = FindProperty("_OverlayTint", properties);
             overlayTexProp = FindProperty("_OverlayTex", properties);
 
+            clipPlaneLocalProp = FindProperty("_PlaneClippingLocal", properties);
             clipPlanePosProp = FindProperty("_PlanePosition", properties);
             clipPlaneNormalProp = FindProperty("_PlaneNormal", properties);
             clipSectionEmmisiveProp = FindProperty("_ClipSectionEmmisive", properties);
@@ -299,6 +301,7 @@ namespace ArmNomads.Shaders
                 if (toggleProp.floatValue <= 0)
                     return;
                 ++EditorGUI.indentLevel;
+                DrawShaderKeywordToggle(clipPlaneLocalProp, "PLANE_CLIPPING_LOCAL");
                 materialEditor.ShaderProperty(clipSectionColorProp, clipSectionColorProp.displayName);
                 materialEditor.ShaderProperty(clipSectionEmmisiveProp, clipSectionEmmisiveProp.displayName);
                 materialEditor.ShaderProperty(clipPlanePosProp, clipPlanePosProp.displayName);

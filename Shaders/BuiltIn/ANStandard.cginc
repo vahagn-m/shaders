@@ -410,7 +410,11 @@
 	fixed4 frag(v2f i, fixed facing : VFACE) : SV_Target
 	{
 		#if PLANE_CLIPPING
-			clip(dot((_PlanePosition - i.worldPos), _PlaneNormal));
+			float3 fragPos = i.worldPos;
+			#if PLANE_CLIPPING_LOCAL
+				fragPos = mul(unity_WorldToObject, float4(i.worldPos, 1.0));
+			#endif
+			clip(dot((_PlanePosition - fragPos), _PlaneNormal));
 		#endif
 
 		#if WORLD_SPACE_UV

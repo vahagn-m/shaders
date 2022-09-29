@@ -55,6 +55,7 @@ Shader "ArmNomads/Standard"
 		[HideInInspector] _TriBlendExp("Blend Exponent", Range(1, 8)) = 2
 
 		[Toggle(PLANE_CLIPPING)] _PlaneClipping("Plane Clipping", Int) = 0
+		[HideInInspector][Toggle(PLANE_CLIPPING_LOCAL)] _PlaneClippingLocal("Local Space Clipping", Int) = 0
 		[HideInInspector]_PlanePosition("Plane Position", Vector) = (0,0,0,0)
 		[HideInInspector]_PlaneNormal("Plane Normal", Vector) = (0,0,1,0)
 		[HideInInspector][Toggle]_ClipSectionEmmisive("Emmisive", Float) = 0
@@ -97,6 +98,7 @@ Shader "ArmNomads/Standard"
 			#pragma shader_feature_local OVERLAY_PROJECTION
 			#pragma shader_feature_local GRADIENT
 			#pragma shader_feature_local PLANE_CLIPPING
+			#pragma shader_feature_local PLANE_CLIPPING_LOCAL
 			#pragma shader_feature_local DISPLACEMENT
 
 			ENDCG
@@ -112,6 +114,7 @@ Shader "ArmNomads/Standard"
 			#pragma multi_compile_shadowcaster
 
 			#pragma shader_feature_local PLANE_CLIPPING
+			#pragma shader_feature_local PLANE_CLIPPING_LOCAL
 
 			#include "UnityCG.cginc"
 
@@ -140,7 +143,11 @@ Shader "ArmNomads/Standard"
 			float4 frag(v2f i, fixed facing : VFACE) : SV_Target
 			{
 #if PLANE_CLIPPING
-				clip(dot((_PlanePosition - i.worldPos), _PlaneNormal));
+				float3 fragPos = i.worldPos;
+	#if PLANE_CLIPPING_LOCAL
+				fragPos = mul(unity_WorldToObject, float4(i.worldPos, 1.0));
+	#endif
+				clip(dot((_PlanePosition - fragPos), _PlaneNormal));
 #endif
 				SHADOW_CASTER_FRAGMENT(i)
 			}
